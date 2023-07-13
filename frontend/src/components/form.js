@@ -19,6 +19,10 @@ import { DataGrid } from '@mui/x-data-grid';
 import './style.css';
 import EmailEditors from './emaileditor';
 import { useMediaQuery } from '@mui/material';
+import EmailIcon from '@mui/icons-material/Email';
+import CircularProgress from '@mui/material/CircularProgress';
+import Snackbar from '@mui/material/Snackbar';
+import MuiAlert from '@mui/material/Alert';
 
 
 
@@ -60,6 +64,10 @@ function Form() {
   const [apiData, setApiData] = useState([]);
   const [exportedHtml, setExportedHtml] = useState(""); // Added state variable for exported HTML
   const isMobile = useMediaQuery('(max-width: 1001px)');
+  const [loading, setLoading] = useState(false);
+const [snackbarOpen, setSnackbarOpen] = useState(false);
+const [snackbarSeverity, setSnackbarSeverity] = useState('success');
+const [snackbarMessage, setSnackbarMessage] = useState('');
 
   useEffect(() => {
     console.log(apiData);
@@ -68,18 +76,29 @@ function Form() {
   const handleSubmit = async (event) => {
     event.preventDefault();
     const datas = new FormData(event.currentTarget);
+    setLoading(true);
 
     const data = {
       subjects: datas.get('subject'),
       email: emaildata,
       body: exportedHtml, // Pass the exported HTML to the body
     };
-
+    try {
     const response = await axios.post(
       `${process.env.REACT_APP_BASE_URL}/api/sendemail`,
       data
     );
-    console.log(response.data);
+    setSnackbarMessage('Email sent');
+    setSnackbarSeverity('success');
+    setSnackbarOpen(true);
+     } catch (error) {
+      setSnackbarMessage('Failed to send emails');
+    setSnackbarSeverity('error');
+    setSnackbarOpen(true);
+    } finally {
+      // Hide the circular progress indicator
+      setLoading(false);
+    }
   };
 
   const handleFileUpload = (e) => {
@@ -113,9 +132,8 @@ function Form() {
             alignItems: 'center',
           }}
         >
-          <Avatar sx={{ m: 1, bgcolor: 'secondary.main' }}>
-            <LockOutlinedIcon />
-          </Avatar>
+         <Avatar sx={{ m: 1, bgcolor: '#000', border: '4px solid #00f', boxShadow: '0 0 8px #00f' }}/>
+  <EmailIcon sx={{ color: '#fff' }} />
           <Typography component="h1" variant="h5">
             Send Email
           </Typography>
@@ -159,8 +177,13 @@ function Form() {
                 color: 'white',
               }}
             >
-              Send
+              {loading ? <CircularProgress size={24} color="inherit" /> : 'Send'}
             </Button>
+            <Snackbar open={snackbarOpen} autoHideDuration={6000} onClose={() => setSnackbarOpen(false)}>
+      <MuiAlert severity={snackbarSeverity} onClose={() => setSnackbarOpen(false)}>
+        {snackbarMessage}
+      </MuiAlert>
+    </Snackbar>
           </Box>
         </Box>
       </Container>
