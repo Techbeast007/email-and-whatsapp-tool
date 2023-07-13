@@ -1,10 +1,10 @@
 import React, { Component } from 'react';
 import EmailEditor from "react-email-editor";
-import sample from './sample2.json';
+import sample from './design.json';
+import sample2 from './sample2.json';
 import Button from '@mui/material/Button';
 import CircularProgress from '@mui/material/CircularProgress';
 import { styled } from '@mui/system';
-
 
 const StyledButton = styled(Button)(({ theme }) => ({
   background: 'linear-gradient(45deg, #FF8E53 30%, #FE6B8B 90%)',
@@ -27,6 +27,7 @@ class EmailEditors extends Component {
       design: null, // Added state variable to hold the design
       exportedHtml: "", // Added state variable to hold the exported HTML
       isSaving: false,
+      isToggled: false,
     };
   }
 
@@ -35,11 +36,15 @@ class EmailEditors extends Component {
   }
 
   loadDesign = () => {
+    const { isToggled } = this.state;
     const savedDesign = localStorage.getItem('savedDesign');
     if (savedDesign) {
       this.editor.loadDesign(JSON.parse(savedDesign));
     } else {
-      this.editor.loadDesign(this.props.defaultDesign || sample);
+      const design = isToggled ? sample : sample2;
+      this.setState({ design }, () => {
+        this.editor.loadDesign(design);
+      });
     }
   };
 
@@ -48,7 +53,6 @@ class EmailEditors extends Component {
       this.setState({ design });
       console.log('saveDesign', design);
       localStorage.setItem('savedDesign', JSON.stringify(design)); // Save the design in localStorage
-      
     });
   };
 
@@ -57,7 +61,7 @@ class EmailEditors extends Component {
     this.saveDesign(); // Save the design before exporting HTML
     this.editor.exportHtml((data) => {
       const { html } = data;
-      console.log('exportHtml', html);
+     
       if (this.props.onExportHtml) {
         this.props.onExportHtml(html); // Pass the exported HTML to the callback function
       }
@@ -67,11 +71,13 @@ class EmailEditors extends Component {
       console.log('HTML saved!');
     }, 2000);
   };
-  
 
-  sendEmail = async () => {
-    const { exportedHtml } = this.state;
-    // Send the email using the exported HTML
+  handleClick = () => {
+    this.setState((prevState) => ({
+      isToggled: !prevState.isToggled,
+    }), () => {
+      this.loadDesign();
+    });
   };
 
   onLoad = () => {
@@ -83,25 +89,29 @@ class EmailEditors extends Component {
   };
 
   render() {
-    const { isSaving } = this.state;
+    const { isSaving, isToggled } = this.state;
     return (
       <div>
-       
-
         <EmailEditor
           ref={(editor) => (this.editor = editor)}
           onLoad={this.onLoad}
           onDesignLoad={this.onDesignLoad}
         />
-         <div>
-        <StyledButton
-        variant="contained"
-        onClick={this.exportHtml}
-        disabled={isSaving}
-        startIcon={isSaving ? <CircularProgress size={20} /> : null}
-      >
-        {isSaving ? 'Saving...' : 'Save HTML'}
-      </StyledButton>
+        <div>
+          <StyledButton
+            variant="contained"
+            onClick={this.exportHtml}
+            disabled={isSaving}
+            startIcon={isSaving ? <CircularProgress size={20} /> : null}
+          >
+            {isSaving ? 'Saving...' : 'Save HTML'}
+          </StyledButton>
+          <StyledButton
+            variant="contained"
+            onClick={this.handleClick}
+          >
+            {isToggled ? 'Change to Sample 2' : 'Change to Sample 1'}
+          </StyledButton>
         </div>
       </div>
     );
@@ -109,3 +119,4 @@ class EmailEditors extends Component {
 }
 
 export default EmailEditors;
+

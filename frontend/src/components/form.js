@@ -23,13 +23,15 @@ import EmailIcon from '@mui/icons-material/Email';
 import CircularProgress from '@mui/material/CircularProgress';
 import Snackbar from '@mui/material/Snackbar';
 import MuiAlert from '@mui/material/Alert';
+import { Parser } from 'html-to-react';
 
 
 
-const columns = [
-  { field: 'id', headerName: 'ID', width: 70 },
-  { field: 'email', headerName: 'Email', width: 200 },
-];
+  
+
+
+
+
 
 const theme = createTheme({
   palette: {
@@ -68,6 +70,48 @@ function Form() {
 const [snackbarOpen, setSnackbarOpen] = useState(false);
 const [snackbarSeverity, setSnackbarSeverity] = useState('success');
 const [snackbarMessage, setSnackbarMessage] = useState('');
+const [htmlContent, setHtmlContent] = useState('');
+
+useEffect(() => {
+  const fetchHtml = async () => {
+    try {
+      const response = await fetch('frontend\html\welcome-email-meslerides.html');
+      const html = await response.text();
+      setHtmlContent(html);
+    } catch (error) {
+      console.error('Error fetching HTML file:', error);
+    }
+  };
+
+  fetchHtml();
+}, []);
+
+
+// useEffect(()=>{
+// console.log(convertHtmlToJson(htmlContent))
+// },[htmlContent])
+
+
+const convertHtmlToJson = (html) => {
+  const parser = new Parser();
+
+  // Convert HTML to React elements
+  const reactElements = parser.parse(html);
+
+  // Convert React elements to JSON format
+  const json = JSON.stringify(reactElements);
+
+  return json;
+};
+  
+   
+
+const columns = emaildata[0]?.map((value, index) => ({
+  field: `col_${index}`, // Assign a unique field name for each column
+  headerName: value, // Use the value as the column header
+  width: 200,
+}));
+
 
   useEffect(() => {
     console.log(apiData);
@@ -80,7 +124,7 @@ const [snackbarMessage, setSnackbarMessage] = useState('');
 
     const data = {
       subjects: datas.get('subject'),
-      email: emaildata,
+      email: email,
       body: exportedHtml, // Pass the exported HTML to the body
     };
     try {
@@ -104,20 +148,31 @@ const [snackbarMessage, setSnackbarMessage] = useState('');
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
     Papa.parse(file, {
-      header: true,
       complete: (results) => {
-        setData(results.data.map((x) => {
-          return x["Login email"];
-        }));
+        const { data } = results;
+        // Remove any empty rows or headers
+        const filteredData = data.filter((row) => row.length > 0);
+  
+        setData(filteredData);
+        const emails = filteredData.slice(1).map((rowData) => rowData[0] || rowData[1]);
+        setEmail(emails)
       },
     });
   };
+  
 
   const handleExportedHtml = (html) => {
     setExportedHtml(html); // Save the exported HTML in state
   };
 
-    const rows = emaildata.map((email, index) => ({ id: index + 1, email }));
+  const rows = emaildata?.slice(1).map((rowData, index) => {
+    const row = { id: index + 1 };
+    rowData.forEach((value, colIndex) => {
+      const fieldName = `col_${colIndex}`;
+      row[fieldName] = value;
+    });
+    return row;
+  });
  
 
   return (
